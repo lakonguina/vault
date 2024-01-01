@@ -15,6 +15,112 @@ def main():
 						]
 				],
 		).layout(("requests", "callback"))
+		
+		class Fa2Function(sp.Contract):
+			@sp.private(with_operations=True)
+			def transfer_fa2(self, params):
+				c = sp.contract(
+					sp.list[
+						sp.record(
+							from_=sp.address,
+							txs=sp.list[
+								sp.record(
+									to_=sp.address,
+									token_id=sp.nat,
+									amount=sp.nat
+								).layout(("to_", ("token_id", "amount")))
+							]
+						).layout(("from_", "txs"))
+					],
+					params.address,
+					entrypoint="transfer",
+				).unwrap_some()
+
+				sp.transfer(
+					[
+						sp.record(
+							from_=params.from_,
+							txs=[
+								sp.record(
+									to_=params.to,
+									token_id=params.token_id,
+									amount=params.amount,
+								)
+							]
+						)
+					],
+					sp.tez(0),
+					c,
+				)
+
+			@sp.private(with_operations=True)
+			def approve_fa2(self, params):
+				c = sp.contract(
+					sp.list[
+						sp.variant(
+							add_operator=sp.record(
+								owner=sp.address,
+								operator=sp.address,
+								token_id=sp.nat
+							).layout(("owner", ("operator", "token_id"))),
+							remove_operator=sp.record(
+								owner=sp.address,
+								operator=sp.address,
+								token_id=sp.nat
+							).layout(("owner", ("operator", "token_id")))
+						)
+					],
+					params.address,
+					entrypoint="update_operators",
+				).unwrap_some()
+
+				sp.transfer(
+					[
+						sp.variant.add_operator(sp.record(
+							owner=params.owner,
+							operator=params.operator,
+							token_id=params.token_id,
+						))
+					],
+					sp.tez(0),
+					c,
+				)
+
+			@sp.private(with_operations=True)
+			def get_balance_fa2(self, params):
+				c = sp.contract(
+					sp.record(
+						callback = sp.contract[
+							sp.list[
+								sp.record(
+									request=sp.record(
+										owner=sp.address,
+										token_id=sp.nat
+									).layout(("owner", "token_id")),
+									balance=sp.nat
+								).layout(("request", "balance"))
+							]
+						],
+						requests = sp.list[sp.record(owner=sp.address, token_id=sp.nat).layout(("owner", "token_id"))]
+					),
+					params.address,
+					entrypoint="update_operators",
+				).unwrap_some()
+
+				sp.transfer(
+					sp.record(
+						callback = params.c,
+						requests = [
+							sp.record(
+								owner=params.owner,
+								token_id=params.token_id,
+							)
+						]
+					),
+					sp.tez(0),
+					c,
+				)
+
 
 		class Fa2FungibleMinimal(sp.Contract):
 				"""Minimal FA2 contract for fungible tokens.
